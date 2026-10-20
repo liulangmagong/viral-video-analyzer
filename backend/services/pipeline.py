@@ -17,7 +17,8 @@ from services.vision_analyzer import analyze_frame, generate_segment_prompts
 from services.viral_analyzer import analyze_viral
 
 
-async def run_pipeline(task_id: str, url: str, event_queue: asyncio.Queue):
+async def run_pipeline(task_id: str, url: str, event_queue: asyncio.Queue, *, imported_meta: VideoMeta | None = None,
+                       language: str | None = "zh"):
     """Run the full analysis pipeline, emitting SSE events along the way."""
     task_dir = os.path.join(settings.DATA_DIR, task_id)
     os.makedirs(task_dir, exist_ok=True)
@@ -26,9 +27,9 @@ async def run_pipeline(task_id: str, url: str, event_queue: asyncio.Queue):
         # Stage 1: Download
         await event_queue.put({
             "type": "progress",
-            "data": {"stage": "downloading", "progress": 0.05, "message": "正在下载视频..."},
+            "data": {"stage": "downloading", "progress": 0.05, "message": "正在载入视频..." if imported_meta is not None else "正在下载视频..."},
         })
-        meta = await download_video(url, task_dir)
+        meta = imported_meta if imported_meta is not None else await download_video(url, task_dir)
         await event_queue.put({
             "type": "stage_complete",
             "data": {"stage": "downloading", "result": meta.model_dump()},
@@ -57,7 +58,7 @@ async def run_pipeline(task_id: str, url: str, event_queue: asyncio.Queue):
             "type": "progress",
             "data": {"stage": "transcribing", "progress": 0.30, "message": "正在识别语音..."},
         })
-        transcript = await transcribe_with_whisper(audio_path)
+        transcript = await transcribe_with_whisper(audio_path, language=language) if audio_path else []
         await event_queue.put({
             "type": "stage_complete",
             "data": {"stage": "transcribing", "result": {"segment_count": len(transcript)}},

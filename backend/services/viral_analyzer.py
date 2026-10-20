@@ -40,9 +40,9 @@ def _analyze_viral_sync(
     """Synchronous viral analysis (runs in thread pool)."""
     client = _get_client()
 
-    likes_str = f"{meta.likes}" if meta.likes else "未知"
-    comments_str = f"{meta.comments}" if meta.comments else "未知"
-    shares_str = f"{meta.shares}" if meta.shares else "未知"
+    likes_str = f"{meta.likes}" if meta.likes is not None else "未知"
+    comments_str = f"{meta.comments}" if meta.comments is not None else "未知"
+    shares_str = f"{meta.shares}" if meta.shares is not None else "未知"
 
     user_content = f"""视频信息：
 - 标题：{meta.title}
@@ -51,6 +51,12 @@ def _analyze_viral_sync(
 - 评论数：{comments_str}
 - 分享数：{shares_str}
 - 时长：{meta.duration:.1f}秒
+- 平台：{meta.platform}
+- 播放量：{meta.views if meta.views is not None else "未知"}
+- 互动数据来源：{meta.metrics_source or "未注明"}
+- 观测时间：{meta.metrics_observed_at or "未知"}
+- 是否估算：{meta.metrics_are_estimates}
+互动指标只用于内容筛选，不代表销量、转化或因果证据。
 
 完整口播/字幕文案：
 {full_transcript or '（无语音内容）'}

@@ -2,6 +2,7 @@ import asyncio
 import json
 import os
 import uuid
+from urllib.parse import urlparse
 from typing import Optional
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException
@@ -25,6 +26,9 @@ class AnalyzeRequest(BaseModel):
 
 @router.post("/api/analyze", response_model=AnalyzeResponse)
 async def start_analysis(req: AnalyzeRequest, background_tasks: BackgroundTasks):
+    host = (urlparse(req.url).hostname or "").lower()
+    if host == "tiktok.com" or host.endswith(".tiktok.com"):
+        raise HTTPException(422, "TikTok URL download is not supported; upload an authorized MP4 via /api/imports")
     task_id = str(uuid.uuid4())[:8]
     event_queue = asyncio.Queue()
     tasks[task_id] = {
