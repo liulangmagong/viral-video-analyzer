@@ -20,18 +20,24 @@ async def _run_cmd(cmd: list[str]) -> tuple[bytes, bytes]:
 async def get_video_duration(video_path: str) -> float:
     cmd = [
         "ffprobe", "-v", "quiet", "-print_format", "json",
-        "-show_format", video_path,
+        "-show_format", "-protocol_whitelist", "file,pipe", video_path,
     ]
     stdout, _ = await _run_cmd(cmd)
     info = json.loads(stdout)
     return float(info["format"]["duration"])
 
 
-async def extract_audio(video_path: str, output_dir: str) -> str:
+async def extract_audio(video_path: str, output_dir: str) -> str | None:
     """Extract audio as 16kHz mono WAV for ASR."""
+    stdout, _ = await _run_cmd([
+        "ffprobe", "-v", "error", "-select_streams", "a", "-show_entries",
+        "stream=index", "-of", "json", "-protocol_whitelist", "file,pipe", video_path,
+    ])
+    if not json.loads(stdout).get("streams"):
+        return None
     audio_path = os.path.join(output_dir, "audio.wav")
     cmd = [
-        "ffmpeg", "-y", "-i", video_path,
+        "ffmpeg", "-y", "-protocol_whitelist", "file,pipe", "-i", video_path,
         "-vn", "-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1",
         audio_path,
     ]
@@ -47,7 +53,7 @@ async def extract_frames(video_path: str, frames_dir: str) -> list[dict]:
 
     # 1-FPS extraction → change to 1 frame per 3 seconds for efficiency
     fps_cmd = [
-        "ffmpeg", "-y", "-i", video_path,
+        "ffmpeg", "-y", "-protocol_whitelist", "file,pipe", "-i", video_path,
         "-vf", "fps=1/3,scale=1280:-2",
         "-q:v", "2", "-start_number", "1",
         os.path.join(frames_dir, "%03d.jpg"),
@@ -65,7 +71,7 @@ async def extract_frames(video_path: str, frames_dir: str) -> list[dict]:
 
     # Scene change detection
     scene_cmd = [
-        "ffmpeg", "-y", "-i", video_path,
+        "ffmpeg", "-y", "-protocol_whitelist", "file,pipe", "-i", video_path,
         "-vf", "select='gt(scene,0.3)',showinfo,scale=1280:-2",
         "-vsync", "vfn", "-q:v", "2",
         os.path.join(frames_dir, "scene_%03d.jpg"),

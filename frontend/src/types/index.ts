@@ -1,4 +1,11 @@
 export interface VideoMeta {
+  platform?: string;
+  source_url?: string | null;
+  source_video_id?: string | null;
+  views?: number | null;
+  metrics_source?: string | null;
+  metrics_observed_at?: string | null;
+  metrics_are_estimates?: boolean;
   title: string;
   author: string;
   author_id: string;

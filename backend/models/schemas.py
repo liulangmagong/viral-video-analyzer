@@ -1,5 +1,6 @@
-from pydantic import BaseModel
-from typing import Optional
+from pydantic import BaseModel, ConfigDict, Field
+from typing import Optional, Literal
+from datetime import datetime
 
 
 class AnalyzeRequest(BaseModel):
@@ -12,6 +13,14 @@ class AnalyzeResponse(BaseModel):
 
 
 class VideoMeta(BaseModel):
+    platform: str = "douyin"
+    source_url: Optional[str] = None
+    source_video_id: Optional[str] = None
+    views: Optional[int] = None
+    metrics_source: Optional[str] = None
+    metrics_observed_at: Optional[datetime] = None
+    metrics_are_estimates: bool = False
+
     title: str = ""
     author: str = ""
     author_id: str = ""
@@ -80,3 +89,28 @@ class FullAnalysisResult(BaseModel):
     segments: list[SegmentAnalysis] = []
     viral_analysis: ViralAnalysis = ViralAnalysis()
     created_at: str = ""
+
+
+class ImportMetadata(BaseModel):
+    """Sidecar contract; duration is always probed from the actual media."""
+    model_config = ConfigDict(extra="forbid")
+    platform: Literal["tiktok", "douyin", "local"] = "local"
+    title: str = Field(default="", max_length=2000)
+    author: str = Field(default="", max_length=200)
+    author_id: str = Field(default="", max_length=200)
+    source_url: Optional[str] = Field(default=None, max_length=2048)
+    source_video_id: Optional[str] = Field(default=None, max_length=200)
+    likes: Optional[int] = Field(default=None, ge=0, strict=True)
+    comments: Optional[int] = Field(default=None, ge=0, strict=True)
+    shares: Optional[int] = Field(default=None, ge=0, strict=True)
+    views: Optional[int] = Field(default=None, ge=0, strict=True)
+    metrics_source: Optional[str] = Field(default=None, max_length=500)
+    metrics_observed_at: Optional[datetime] = None
+    metrics_are_estimates: bool = False
+    language: Optional[str] = Field(default=None, pattern=r"^[a-z]{2,3}$")
+    rights_confirmed: Literal[True]
+    rights_note: str = Field(min_length=1, max_length=2000)
+
+
+class ImportedAnalysisRequest(BaseModel):
+    allow_paid_models: bool = False

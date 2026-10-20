@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from routers import analyze, results
+from routers import analyze, results, imports
 
 app = FastAPI(title="Viral Video Analyzer")
 
@@ -15,6 +15,7 @@ app.add_middleware(
 
 app.include_router(analyze.router)
 app.include_router(results.router)
+app.include_router(imports.router)
 
 
 @app.get("/api/health")
